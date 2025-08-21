@@ -3,22 +3,27 @@ global irq1_stub
 extern irq1_handler
 
 irq1_stub:
-    pusha               ; Save all general-purpose registers
-    cld                 ; Clear direction flag
+    pusha                  ; save general regs
+    push ds
+    push es
+    push fs
+    push gs
 
-    push ds             ; Save data segment
-    push es             ; Save extra segment
-    mov ax, 0x10        ; Set data segment to kernel data segment
-    mov ds, ax          ; Load data segment
-    mov es, ax          ; Load extra segment
+    mov ax, 0x18           ; kernel data segment selector (GDT entry 2)
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
 
-    call irq1_handler   ; Call IRQ1 handler
+    call irq1_handler
 
-    pop es              ; Restore extra segment
-    pop ds              ; Restore data segment
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popa
 
-    mov al, 0x20        ; Send EOI (End of Interrupt) to master PIC
-    out 0x20, al        ; Acknowledge interrupt
+    mov al, 0x20           ; send EOI
+    out 0x20, al
 
-    popa                ; Restore all general-purpose registers
-    iret                ; Return from interrupt
+    iret

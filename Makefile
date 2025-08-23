@@ -42,10 +42,13 @@ $(OUT_DIR)/pic.o: $(INTR_DIR)/pic.cpp $(INTR_DIR)/pic.h $(UTILS_DIR)/io.h
 $(OUT_DIR)/keyboard.o: $(DRV_DIR)/keyboard.cpp $(DRV_DIR)/keyboard.h $(INTR_DIR)/irq.h $(UTILS_DIR)/io.h $(UTILS_DIR)/screen.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(OUT_DIR)/pit.o: $(DRV_DIR)/pit.cpp $(DRV_DIR)/pit.h $(INTR_DIR)/irq.h $(UTILS_DIR)/io.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 # Link Kernel
 $(OUT_DIR)/kernel.bin: $(OUT_DIR)/multiboot_header.o $(OUT_DIR)/kernel.o \
 	$(OUT_DIR)/screen.o $(OUT_DIR)/idt.o $(OUT_DIR)/isr_asm.o $(OUT_DIR)/isr.o \
-	$(OUT_DIR)/irq_asm.o $(OUT_DIR)/irq.o $(OUT_DIR)/pic.o $(OUT_DIR)/keyboard.o
+	$(OUT_DIR)/irq_asm.o $(OUT_DIR)/irq.o $(OUT_DIR)/pic.o $(OUT_DIR)/keyboard.o $(OUT_DIR)/pit.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # ISO build

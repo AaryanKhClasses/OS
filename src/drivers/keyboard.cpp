@@ -7,7 +7,7 @@
 static volatile uint8_t buf[KB_BUF_SIZE];
 static volatile int head = 0, tail = 0;
 
-static void kb_irq(Registers* r) {
+static void kb_irq(Registers*) {
     uint8_t sc = inb(0x60);
     if(sc & 0x80) return;
     int next = (head + 1) % KB_BUF_SIZE;

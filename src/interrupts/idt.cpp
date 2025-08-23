@@ -14,10 +14,9 @@ struct __attribute__((packed)) IDTPtr {
 };
 
 static IDTEntry idt[256];
-static IDTPtr   idt_ptr;
 
 static inline void load_idt(void* base, uint16_t size) {
-    struct __attribute__((packed)) { uint16_t limit; uint32_t base; } idtr = { size, (uint32_t)base };
+    IDTPtr idtr = { size, (uint32_t)base };
     asm volatile("lidt %0" : : "m"(idtr));
 }
 

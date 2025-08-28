@@ -10,6 +10,7 @@ SRC_DIR = src
 UTILS_DIR = $(SRC_DIR)/utils
 INTR_DIR = $(SRC_DIR)/interrupts
 DRV_DIR  = $(SRC_DIR)/drivers
+SCH_DIR  = $(SRC_DIR)/scheduler
 
 # Objects
 $(OUT_DIR)/multiboot_header.o: $(SRC_DIR)/multiboot_header.asm
@@ -45,10 +46,17 @@ $(OUT_DIR)/keyboard.o: $(DRV_DIR)/keyboard.cpp $(DRV_DIR)/keyboard.h $(INTR_DIR)
 $(OUT_DIR)/pit.o: $(DRV_DIR)/pit.cpp $(DRV_DIR)/pit.h $(INTR_DIR)/irq.h $(UTILS_DIR)/io.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(OUT_DIR)/scheduler.o: $(SCH_DIR)/scheduler.cpp $(SCH_DIR)/scheduler.h $(DRV_DIR)/pit.h $(DRV_DIR)/keyboard.h $(UTILS_DIR)/screen.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OUT_DIR)/ctx_switch.o: $(SCH_DIR)/ctx_switch.asm
+	$(AS) -f elf32 $< -o $@
+
 # Link Kernel
 $(OUT_DIR)/kernel.bin: $(OUT_DIR)/multiboot_header.o $(OUT_DIR)/kernel.o \
 	$(OUT_DIR)/screen.o $(OUT_DIR)/idt.o $(OUT_DIR)/isr_asm.o $(OUT_DIR)/isr.o \
-	$(OUT_DIR)/irq_asm.o $(OUT_DIR)/irq.o $(OUT_DIR)/pic.o $(OUT_DIR)/keyboard.o $(OUT_DIR)/pit.o
+	$(OUT_DIR)/irq_asm.o $(OUT_DIR)/irq.o $(OUT_DIR)/pic.o $(OUT_DIR)/keyboard.o $(OUT_DIR)/pit.o \
+	$(OUT_DIR)/ctx_switch.o $(OUT_DIR)/scheduler.o
 	$(LD) $(LDFLAGS) -o $@ $^
 
 # ISO build
@@ -63,7 +71,11 @@ all: os.iso
 
 # Run
 run: os.iso
-	qemu-system-i386 -cdrom $(OUT_DIR)/os.iso -no-reboot -no-shutdown
+	qemu-system-i386 -cdrom $(OUT_DIR)/os.iso
+
+# Debug
+debug: os.iso
+	qemu-system-i386 -cdrom $(OUT_DIR)/os.iso -d int -no-reboot -no-shutdown -D qemu.log
 
 # Clean
 clean:

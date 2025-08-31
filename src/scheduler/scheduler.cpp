@@ -29,7 +29,7 @@ static Task tasks[MAX_TASKS];
 static int current_task = -1;
 static int task_count = 0;
 
-static void task_trampoline();
+extern "C" void task_trampoline();
 static int pick_next_runnable();
 
 // Utility function to round up ms to ticks
@@ -52,12 +52,13 @@ void scheduler_init() {
 
 static void setup_initial_stack(Task& task) {
     uint32_t* sp = (uint32_t*)(task.stack + STACK_SIZE);
-    // Layout: [edi][esi][ebx][ebp][return_eip]
-    *--sp = 0; // edi
-    *--sp = 0; // esi
-    *--sp = 0; // ebx
+
+    *--sp = (uint32_t)task_trampoline; // return_eip
     *--sp = 0; // ebp
-    *--sp = (uint32_t)task_trampoline; // return address (e
+    *--sp = 0; // ebx
+    *--sp = 0; // esi
+    *--sp = 0; // edi
+
     task.esp = (uint32_t)sp;
 }
 
@@ -107,20 +108,12 @@ static void task_exit() {
     while(1) asm volatile("hlt");
 }
 
-// DEBUG
-static inline void vga_put(char c, int r, int col) {
-    volatile uint8_t* v = (uint8_t*)0xB8000;
-    int idx = (r * 80 + col) * 2;
-    v[idx] = (uint8_t)c;
-    v[idx+1] = 0x0E; // color
-}
-
-static void task_trampoline() {
-    vga_put('X', 4, 5); // DEBUG
+extern "C" void task_trampoline() {
     asm volatile("sti");
     Task& curr = tasks[current_task];
     if(curr.entry) curr.entry(curr.arg);
     task_exit();
+    while(1) asm volatile("hlt");
 }
 
 static int pick_next_runnable() {
@@ -176,23 +169,17 @@ void scheduler_start() {
     }
     
     current_task = first;
-
-    // DEBUG
-    // char buf[32];
-    // uint32_t spval = tasks[first].esp;
-    // const char* hex = "0123456789ABCDEF";
-    // buf[0] = '0'; buf[1] = 'x';
-    // for (int i=0;i<8;i++) {
-    //     buf[2+i] = hex[(spval >> (28 - 4*i)) & 0xF];
-    // }
-    // buf[10] = 0;
-    // print("About to switch to esp=");
-    // print(buf);
-    // print("\n");
-    // END DEBUG
-    
     asm volatile("cli");
     uint32_t dummy_save = 0;
     ctx_switch(&dummy_save, tasks[first].esp);
     while(1) asm volatile("hlt");
+}
+
+extern "C" void scheduler_task_from_irq() {
+    uint32_t now = pit_get_ticks();
+    for(int i = 0; i < MAX_TASKS; ++i) {
+        if(tasks[i].state == TASK_SLEEPING && now >= tasks[i].wake_tick) {
+            tasks[i].state = TASK_RUNNABLE;
+        }
+    }
 }

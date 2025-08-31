@@ -6,12 +6,10 @@ ctx_switch:
     push ebx
     push esi
     push edi
-    ; stack layout: edi <- esi <- ebx <- ebp <- return_eip <- old_esp <- new_esp
 
-    mov eax, [esp + 20]     ; eax = old_esp_ptr
-    mov [eax], esp      ; value(old_esp_ptr) = esp
-    mov esp, [esp + 24]     ; esp = new_esp_ptr
-
+    mov eax, [esp + 20]    ; arg1 = save_esp_ptr
+    mov [eax], esp         ; save current stack pointer (after pushes)
+    mov esp, [esp + 24]    ; arg2 = new_esp
     pop edi
     pop esi
     pop ebx

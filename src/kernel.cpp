@@ -11,7 +11,6 @@ static void task_blink(void*) {
     while (1) {
         set_color(LIGHT_GREEN, BLACK);
         print("blink ");
-        // print number
         char buf[16]; int p=0; uint32_t v=n++;
         if (v==0) buf[p++]='0'; else { char t[16]; int k=0; while(v){ t[k++]='0'+(v%10); v/=10; } while(k--) buf[p++]=t[k]; }
         buf[p]=0;
@@ -36,10 +35,7 @@ static void task_kbd(void*) {
                 printed = true;
             }
         }
-        if (!printed) {
-            // nothing to do; yield to others
-            yield();
-        }
+        if (!printed) yield();
     }
 }
 
@@ -49,13 +45,9 @@ extern "C" void kernel_main() {
 
     println("Phase 3: Cooperative scheduler demo");
 
-    // IDT + IRQ base (you already have these)
     idt_init();
     pic_remap(0x20, 0x28);
     irq_install_idt_entries();
-
-    // enable PIT (IRQ0) + keyboard (IRQ1): unmask bits 0 and 1
-    // mask byte: 1=masked(disabled). We want IRQ0+IRQ1 enabled => 0b11111100 = 0xFC
     pic_set_masks(0xFC, 0xFF);
 
     keyboard_init();

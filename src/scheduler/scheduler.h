@@ -8,3 +8,5 @@ int task_create(task_fn_t entry, void* arg, const char* name);
 void yield();
 void task_sleep_ms(uint32_t ms);
 void scheduler_start();
+
+extern "C" void scheduler_task_from_irq();

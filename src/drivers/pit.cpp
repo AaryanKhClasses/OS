@@ -1,6 +1,7 @@
 #include "pit.h"
 #include "../utils/io.h"
 #include "../interrupts/irq.h"
+#include "../scheduler/scheduler.h"
 #include <stdint.h>
 
 #define PIT_CHANNEL0 0x40
@@ -17,6 +18,7 @@ static inline void pit_set_divisor(uint16_t divisor) {
 
 static void pit_irq(Registers*) {
     ++ticks;
+    scheduler_task_from_irq();
 }
 
 void pit_init(uint32_t freq_hz) {

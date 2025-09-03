@@ -5,6 +5,9 @@
 #include "./drivers/keyboard.h"
 #include "./drivers/pit.h"
 #include "./scheduler/scheduler.h"
+#include "./mem/paging.h"
+#include "./mem/pmm.h"
+#include "./mem/heap.h"
 
 static void task_blink(void*) {
     uint32_t n = 0;
@@ -46,6 +49,46 @@ extern "C" void kernel_main() {
     println("Phase 3: Cooperative scheduler demo");
 
     idt_init();
+    paging_init_identity_16mb();
+    pmm_init(0x00400000, 0x01000000);
+    heap_init(0x00800000, 0x00100000);
+
+    {
+        char buf[64];
+        uint32_t total = pmm_total_frames();
+        uint32_t freec = pmm_free_frames();
+        int pos = 0;
+        uint32_t v = total;
+        char tmp[16];
+        if (v == 0) tmp[pos++]='0';
+        else { int t=0; while(v){ tmp[t++]= '0' + (v % 10); v/=10; } while(t--) buf[pos++]=tmp[t]; }
+        buf[pos]=0;
+        print(" total frames: "); print(buf);
+        pos = 0; v = freec;
+        if (v == 0) tmp[pos++]='0';
+        else { int t=0; while(v){ tmp[t++]= '0' + (v % 10); v/=10; } while(t--) tmp[pos++]=tmp[t]; }
+        tmp[pos]=0;
+        print(" free frames: "); print(tmp); print("\n");
+    }
+
+    void* p = kmalloc_pages(1);
+    if (p) {
+        print("kmalloc_pages got: ");
+        char hex[11] = "0x00000000"; const char* H="0123456789ABCDEF";
+        uint32_t addr = (uint32_t)(uintptr_t)p;
+        for(int i=0;i<8;i++) hex[2+i]=H[(addr>>(28-4*i))&0xF];
+        print(hex); print("\n");
+    }
+
+    void* b = kmalloc(64);
+    if (b) {
+        print("kmalloc(64) -> "); char hex2[11]="0x00000000";
+        uint32_t addr2=(uint32_t)(uintptr_t)b;
+        const char* H="0123456789ABCDEF";
+        for(int i=0;i<8;i++) hex2[2+i]=H[(addr2>>(28-4*i))&0xF];
+        print(hex2); print("\n");
+    }
+
     pic_remap(0x20, 0x28);
     irq_install_idt_entries();
     pic_set_masks(0xFC, 0xFF);
